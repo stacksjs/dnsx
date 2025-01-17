@@ -181,6 +181,8 @@ class TLSTransport implements Transport {
         message.set(lengthPrefix)
         message.set(requestData, lengthPrefix.length)
 
+        let timeoutId: ReturnType<typeof setTimeout>
+
         // Write the combined message
         socket.write(message, (err) => {
           if (err) {
@@ -191,7 +193,6 @@ class TLSTransport implements Transport {
         })
       })
 
-      let timeoutId: ReturnType<typeof setTimeout>
       // Initialize data as Uint8Array
       let data = new Uint8Array(0)
       let expectedLength = -1

@@ -1,11 +1,12 @@
 import type { DnsAnswer, DnsQuery, DnsResponse, EDNSMode, ProtocolTweaks } from './types'
 import { Buffer } from 'node:buffer'
 import { RecordType } from './types'
+import { debugLog } from './utils'
 
 // Wire format constants
 const DNS_HEADER_SIZE = 12
 const MAX_LABEL_LENGTH = 63
-const MAX_NAME_LENGTH = 255
+// const MAX_NAME_LENGTH = 255
 
 /**
  * DNS header flags
@@ -74,11 +75,13 @@ export class DnsEncoder {
   private buffer: Buffer
   private offset: number
   private nameOffsets: Map<string, number>
+  private verbose?: boolean
 
-  constructor(size = 512) {
+  constructor(size = 512, verbose?: boolean) {
     this.buffer = Buffer.alloc(size)
     this.offset = 0
     this.nameOffsets = new Map()
+    this.verbose = verbose
   }
 
   writeHeader(id: number, flags: DnsFlags, counts: {
@@ -87,7 +90,7 @@ export class DnsEncoder {
     nscount: number
     arcount: number
   }): void {
-    console.debug('Writing DNS header:', {
+    debugLog('encoder', `Writing DNS header: ${JSON.stringify({
       id,
       flags: {
         response: flags.response,
@@ -95,7 +98,7 @@ export class DnsEncoder {
         recursionDesired: flags.recursionDesired,
       },
       counts,
-    })
+    })}`, this.verbose)
 
     this.writeUint16(id)
     const flagsBuffer = flags.toBuffer()
@@ -108,7 +111,7 @@ export class DnsEncoder {
   }
 
   writeName(name: string): void {
-    console.debug('Writing DNS name:', name)
+    debugLog('encoder', `Writing DNS name: ${name}`, this.verbose)
     const labels = name.split('.')
 
     for (const label of labels) {
@@ -216,8 +219,8 @@ export class DnsDecoder {
     }
 
     const id = this.readUint16()
-    const rawFlags = this.readUint16()
-    const flags = DnsFlags.fromBuffer(this.buffer.slice(this.offset - 2))
+    const flags = DnsFlags.fromBuffer(this.buffer.slice(this.offset, this.offset + 2))
+    this.offset += 2
 
     const counts = {
       qdcount: this.readUint16(),
@@ -371,8 +374,9 @@ export function buildQuery(query: DnsQuery, options: {
   txid?: number
   edns?: EDNSMode
   tweaks?: ProtocolTweaks
+  verbose?: boolean
 } = {}): Buffer {
-  const encoder = new DnsEncoder()
+  const encoder = new DnsEncoder(512, options.verbose)
 
   // Create flags with correct settings
   const flags = new DnsFlags()
@@ -443,33 +447,5 @@ export function parseResponse(buffer: Buffer): DnsResponse {
     answers,
     authorities,
     additionals,
-  }
-}
-
-function validateDnsMessage(buffer: Buffer, isResponse: boolean = false): void {
-  if (buffer.length < DNS_HEADER_SIZE) {
-    throw new Error(`DNS message too short: ${buffer.length} bytes`)
-  }
-
-  const id = buffer.readUInt16BE(0)
-  const flags = buffer.readUInt16BE(2)
-  const qdcount = buffer.readUInt16BE(4)
-  const ancount = buffer.readUInt16BE(6)
-  const nscount = buffer.readUInt16BE(8)
-  const arcount = buffer.readUInt16BE(10)
-
-  console.debug('Validating DNS message:', {
-    id,
-    flags: flags.toString(16),
-    qdcount,
-    ancount,
-    nscount,
-    arcount,
-    isResponse,
-    messageLength: buffer.length,
-  })
-
-  if (isResponse && !(flags & 0x8000)) {
-    throw new Error('Response bit not set in DNS response')
   }
 }

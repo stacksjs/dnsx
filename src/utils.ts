@@ -20,3 +20,10 @@ export function parseProtocolTweaks(tweaks: string | string[] | undefined): Prot
 
   return result
 }
+
+export function debugLog(category: string, message: string, verbose?: boolean): void {
+  if (verbose) {
+    // eslint-disable-next-line no-console
+    console.debug(`[dnsx:${category}] ${message}`)
+  }
+}

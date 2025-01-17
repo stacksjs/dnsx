@@ -4,6 +4,7 @@ import { platform } from 'node:os'
 import { buildQuery, parseResponse } from './protocol'
 import { createTransport, TransportType } from './transport'
 import { QClass, RecordType } from './types'
+import { debugLog } from './utils'
 
 export class DnsClient {
   private options: DnsOptions
@@ -82,24 +83,25 @@ export class DnsClient {
       // Build and execute queries
       for (const query of this.buildQueries()) {
         const nameserver = await this.resolveNameserver()
-        console.debug('Sending query:', {
+        debugLog('client', `Sending query: ${JSON.stringify({
           query,
           nameserver,
           transportType,
-        })
+        })}`, this.options.verbose)
 
         const request = buildQuery(query, {
           txid: this.options.txid,
           edns: this.options.edns,
           tweaks: this.options.tweaks,
+          verbose: this.options.verbose,
         })
 
-        console.debug('Built DNS request:', {
+        debugLog('client', `Built DNS request: ${JSON.stringify({
           hexData: request.toString('hex'),
           length: request.length,
           txid: request.readUInt16BE(0),
           flags: request.readUInt16BE(2).toString(16),
-        })
+        })}`, this.options.verbose)
 
         // Handle retries
         let lastError: Error | undefined
@@ -107,15 +109,15 @@ export class DnsClient {
 
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           try {
-            console.debug(`Attempt ${attempt + 1}/${maxRetries}`)
+            debugLog('client', `Attempt ${attempt + 1}/${maxRetries}`, this.options.verbose)
             const response = await transport.query(nameserver, request)
 
-            console.debug('Received DNS response:', {
+            debugLog('client', `Received DNS response: ${JSON.stringify({
               hexData: response.toString('hex'),
               length: response.length,
               txid: response.readUInt16BE(0),
               flags: response.readUInt16BE(2).toString(16),
-            })
+            })}`, this.options.verbose)
 
             // Validate DNS message before parsing
             if (response.length < 12) { // Minimum DNS message size
@@ -128,16 +130,16 @@ export class DnsClient {
             }
 
             const parsed = parseResponse(response)
-            console.debug('Parsed DNS response:', {
+            debugLog('client', `Parsed DNS response: ${JSON.stringify({
               id: parsed.id,
               answerCount: parsed.answers.length,
               authorityCount: parsed.authorities.length,
               additionalCount: parsed.additionals.length,
-            })
+            })}`, this.options.verbose)
 
             // Check for truncation with UDP
             if (transportType === TransportType.UDP && parsed.flags.truncated) {
-              console.debug('Response truncated, retrying with TCP')
+              debugLog('client', 'Response truncated, retrying with TCP', this.options.verbose)
               // Retry with TCP if truncated
               const tcpTransport = createTransport(TransportType.TCP)
               const tcpResponse = await tcpTransport.query(nameserver, request)
@@ -151,16 +153,16 @@ export class DnsClient {
           }
           catch (err) {
             lastError = err as Error
-            console.debug(`Attempt ${attempt + 1} failed:`, (err as Error).message)
+            debugLog('client', `Attempt ${attempt + 1} failed: ${(err as Error).message}`, this.options.verbose)
 
             if (attempt === maxRetries - 1) {
-              console.debug('All retry attempts failed')
+              debugLog('client', 'All retry attempts failed', this.options.verbose)
               throw lastError
             }
 
             // Wait before retry with exponential backoff
             const backoffTime = 2 ** attempt * 1000
-            console.debug(`Waiting ${backoffTime}ms before retry`)
+            debugLog('client', `Waiting ${backoffTime}ms before retry`, this.options.verbose)
             await new Promise(resolve => setTimeout(resolve, backoffTime))
           }
         }
@@ -254,6 +256,7 @@ export class DnsClient {
       }
     }
     catch (err) {
+      debugLog('client', `Failed to resolve nameserver: ${(err as Error).message}`, this.options.verbose)
       // Fallback to default if system resolution fails
       return DnsClient.DEFAULT_NAMESERVER
     }
