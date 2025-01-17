@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it, mock } from 'bun:test'
+import { Buffer } from 'node:buffer'
 import { buildQuery, DnsClient, DnsDecoder, DnsFlags, parseResponse } from '../src'
 import { TransportType } from '../src/transport'
 import { QClass, RecordType } from '../src/types'
-import { Buffer } from 'node:buffer'
 
 // Mock DNS responses
 const mockResponses = {

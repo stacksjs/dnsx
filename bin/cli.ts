@@ -6,6 +6,7 @@ import pc from 'picocolors'
 import { version } from '../package.json'
 import { DnsClient } from '../src/client'
 import { formatOutput } from '../src/output'
+import { parseProtocolTweaks } from '../src/utils'
 
 interface Colors {
   error: (str: string) => string
@@ -22,6 +23,15 @@ export const colors: Colors = {
   success: (str: string) => pc.green(str),
   info: (str: string) => pc.blue(str),
   dim: (str: string) => pc.dim(str),
+}
+
+export interface CliOptions extends DnsOptions {
+  json?: boolean
+  short?: boolean
+  color?: 'always' | 'auto' | 'never'
+  seconds?: boolean
+  time?: boolean
+  Z?: string | string[]
 }
 
 const cli: CAC = cac('dnsx')
@@ -49,7 +59,7 @@ cli
   .example('dnsx example.com MX')
   .example('dnsx example.com MX @1.1.1.1')
   .example('dnsx example.com -t MX -n 1.1.1.1 -T')
-  .action(async (domains: string[], options: DnsOptions) => {
+  .action(async (domains: string[], options: CliOptions) => {
     try {
       // Handle domains from both arguments and --query option
       const allDomains = [
@@ -59,20 +69,10 @@ cli
 
       // Check if we have any domains to query
       if (allDomains.length === 0) {
-        console.log()
-        console.log(colors.info('  Usage Examples:'))
-        console.log()
-        console.log('    $ dnsx example.com')
-        console.log('    $ dnsx example.com MX')
-        console.log('    $ dnsx example.com MX @1.1.1.1')
-        console.log('    $ dnsx -q example.com -t MX -n 1.1.1.1 -T')
-        console.log()
-        console.log(`  Run ${colors.info('dnsx --help')} for detailed usage`)
-        console.log()
         process.exit(1)
       }
 
-      // Create client with direct options
+      // Create client with parsed options
       const client = new DnsClient({
         domains: allDomains,
         nameserver: options.nameserver,
@@ -84,7 +84,7 @@ cli
         https: options.https,
         edns: options.edns,
         txid: options.txid,
-        tweaks: options.Z,
+        tweaks: parseProtocolTweaks(options.Z),
       })
 
       console.log(colors.dim('  Querying DNS records...'))
@@ -94,14 +94,14 @@ cli
       const duration = Date.now() - startTime
 
       const output = formatOutput(responses, {
-        json: options.json,
-        short: options.short,
+        json: Boolean(options.json), // Convert undefined to false
+        short: Boolean(options.short), // Convert undefined to false
         showDuration: options.time ? duration : undefined,
         colors: {
           enabled: options.color === 'always'
             || (options.color !== 'never' && process.stdout.isTTY),
         },
-        rawSeconds: options.seconds,
+        rawSeconds: Boolean(options.seconds), // Convert undefined to false
       })
 
       console.log()

@@ -43,10 +43,10 @@ export enum EDNSMode {
  * Protocol Tweak Options
  */
 export interface ProtocolTweaks {
-  authoritative?: boolean // Set AA bit
-  authenticData?: boolean // Set AD bit
-  checkingDisabled?: boolean // Set CD bit
-  udpPayloadSize?: number // Set EDNS buffer size
+  authoritative?: boolean
+  authenticData?: boolean
+  checkingDisabled?: boolean
+  udpPayloadSize?: number
 }
 
 /**
