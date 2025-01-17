@@ -11,15 +11,65 @@ export class DnsClient {
   private static readonly RESOLV_CONF_PATH = '/etc/resolv.conf'
   private static readonly WINDOWS_DNS_KEY = 'SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Nameserver'
 
+  private validateDomainName(domain: string): void {
+    // Check for consecutive dots
+    if (domain.includes('..')) {
+      throw new Error(`Invalid domain name: ${domain} (consecutive dots)`)
+    }
+
+    // Check start/end dots
+    if (domain.startsWith('.') || domain.endsWith('.')) {
+      throw new Error(`Invalid domain name: ${domain} (starts or ends with dot)`)
+    }
+
+    // Check length
+    if (domain.length > 253) {
+      throw new Error(`Domain name too long: ${domain}`)
+    }
+
+    // Check label lengths
+    const labels = domain.split('.')
+    for (const label of labels) {
+      if (label.length > 63) {
+        throw new Error(`Label too long in domain: ${domain}`)
+      }
+      // Check label characters
+      if (!/^[a-z0-9-]+$/i.test(label)) {
+        throw new Error(`Invalid characters in domain label: ${label}`)
+      }
+    }
+  }
+
+  private validateRecordType(type: string | number): void {
+    if (typeof type === 'string') {
+      // Check if the type exists in RecordType enum
+      const upperType = type.toUpperCase()
+      if (!(upperType in RecordType)) {
+        throw new Error(`Invalid record type: ${type}`)
+      }
+    }
+    else if (typeof type === 'number') {
+      // Check if the number is a valid enum value
+      const values = Object.values(RecordType).filter(v => typeof v === 'number')
+      if (!values.includes(type)) {
+        throw new Error(`Invalid record type number: ${type}`)
+      }
+    }
+    else {
+      throw new TypeError('Record type must be string or number')
+    }
+  }
+
   constructor(options: DnsOptions) {
-    // The issue is that we're trying to set a TransportType enum value
-    // to a TransportConfig object. Let's fix the initialization:
     this.options = {
       transport: {
         type: TransportType.UDP,
       },
       ...options,
     }
+
+    // Validate options
+    this.validateOptions()
   }
 
   async query(): Promise<DnsResponse[]> {
@@ -150,22 +200,21 @@ export class DnsClient {
   }
 
   private resolveTypes(): RecordType[] {
-    if (!this.options.type)
+    if (!this.options.type) {
       return [RecordType.A]
+    }
 
     const types = Array.isArray(this.options.type)
       ? this.options.type
       : [this.options.type]
 
     return types.map((type) => {
-      if (typeof type === 'number')
+      this.validateRecordType(type)
+      if (typeof type === 'number') {
         return type
-      const upperType = type.toUpperCase()
-      const recordType = RecordType[upperType as keyof typeof RecordType]
-      if (recordType === undefined) {
-        throw new Error(`Invalid record type: ${type}`)
       }
-      return recordType
+      const upperType = type.toUpperCase()
+      return RecordType[upperType as keyof typeof RecordType]
     })
   }
 
@@ -263,12 +312,26 @@ export class DnsClient {
     return TransportType.UDP
   }
 
-  private validateOptions() {
-    if (!this.options.domains?.length) {
-      throw new Error('No domains specified')
+  private validateOptions(): void {
+    // Validate domains
+    if (this.options.domains) {
+      for (const domain of this.options.domains) {
+        this.validateDomainName(domain)
+      }
     }
 
-    // Validate transport options
+    // Validate record type(s)
+    if (this.options.type) {
+      const types = Array.isArray(this.options.type)
+        ? this.options.type
+        : [this.options.type]
+
+      for (const type of types) {
+        this.validateRecordType(type)
+      }
+    }
+
+    // Transport validation
     const transportCount = [
       this.options.udp,
       this.options.tcp,
@@ -280,7 +343,7 @@ export class DnsClient {
       throw new Error('Only one transport type can be specified')
     }
 
-    // Validate HTTPS requirements
+    // Validate HTTPS transport
     if (this.options.https && !this.options.nameserver?.startsWith('https://')) {
       throw new Error('HTTPS transport requires an HTTPS nameserver URL')
     }

@@ -23,7 +23,7 @@ export class DnsFlags {
 
   static fromBuffer(buffer: Buffer): DnsFlags {
     const flags = new DnsFlags()
-    const rawFlags = buffer.readUInt16BE(2)
+    const rawFlags = buffer.readUInt16BE(0)
 
     // First byte contains QR, OPCODE, AA, TC, RD
     flags.response = (rawFlags & 0x8000) !== 0 // QR bit (bit 15)
