@@ -23,43 +23,46 @@ export class DnsFlags {
 
   static fromBuffer(buffer: Buffer): DnsFlags {
     const flags = new DnsFlags()
-    const byte1 = buffer[2]
-    const byte2 = buffer[3]
+    const rawFlags = buffer.readUInt16BE(2)
 
-    flags.response = (byte1 & 0x80) !== 0
-    flags.opcode = (byte1 & 0x78) >>> 3
-    flags.authoritative = (byte1 & 0x04) !== 0
-    flags.truncated = (byte1 & 0x02) !== 0
-    flags.recursionDesired = (byte1 & 0x01) !== 0
-    flags.recursionAvailable = (byte2 & 0x80) !== 0
-    flags.authenticData = (byte2 & 0x20) !== 0
-    flags.checkingDisabled = (byte2 & 0x10) !== 0
-    flags.responseCode = byte2 & 0x0F
+    // First byte contains QR, OPCODE, AA, TC, RD
+    flags.response = (rawFlags & 0x8000) !== 0 // QR bit (bit 15)
+    flags.opcode = (rawFlags & 0x7800) >>> 11 // OPCODE (bits 11-14)
+    flags.authoritative = (rawFlags & 0x0400) !== 0 // AA bit (bit 10)
+    flags.truncated = (rawFlags & 0x0200) !== 0 // TC bit (bit 9)
+    flags.recursionDesired = (rawFlags & 0x0100) !== 0 // RD bit (bit 8)
+
+    // Second byte contains RA, Z, AD, CD, RCODE
+    flags.recursionAvailable = (rawFlags & 0x0080) !== 0 // RA bit (bit 7)
+    flags.authenticData = (rawFlags & 0x0020) !== 0 // AD bit (bit 5)
+    flags.checkingDisabled = (rawFlags & 0x0010) !== 0 // CD bit (bit 4)
+    flags.responseCode = rawFlags & 0x000F // RCODE (bits 0-3)
 
     return flags
   }
 
   toBuffer(): Buffer {
     const buffer = Buffer.alloc(2)
+    let flags = 0
 
     if (this.response)
-      buffer[0] |= 0x80
-    buffer[0] |= (this.opcode & 0x0F) << 3
+      flags |= 0x8000
+    flags |= (this.opcode & 0x0F) << 11
     if (this.authoritative)
-      buffer[0] |= 0x04
+      flags |= 0x0400
     if (this.truncated)
-      buffer[0] |= 0x02
+      flags |= 0x0200
     if (this.recursionDesired)
-      buffer[0] |= 0x01
-
+      flags |= 0x0100
     if (this.recursionAvailable)
-      buffer[1] |= 0x80
+      flags |= 0x0080
     if (this.authenticData)
-      buffer[1] |= 0x20
+      flags |= 0x0020
     if (this.checkingDisabled)
-      buffer[1] |= 0x10
-    buffer[1] |= this.responseCode & 0x0F
+      flags |= 0x0010
+    flags |= this.responseCode & 0x000F
 
+    buffer.writeUInt16BE(flags, 0)
     return buffer
   }
 }
@@ -158,24 +161,63 @@ export class DnsDecoder {
     this.offset = 0
   }
 
-  // Read header section
-  readHeader(): {
-    id: number
-    flags: DnsFlags
-    counts: {
-      qdcount: number
-      ancount: number
-      nscount: number
-      arcount: number
+  // Helper to check if we can safely read bytes
+  private canRead(bytes: number): boolean {
+    return this.offset + bytes <= this.buffer.length
+  }
+
+  readName(): string {
+    const labels: string[] = []
+    let jumping = false
+    let jumpOffset = this.offset
+
+    for (let jumps = 0; jumps < 5; jumps++) { // Limit compression jumps
+      if (jumpOffset >= this.buffer.length) {
+        throw new Error('Out of bounds access')
+      }
+
+      const len = this.buffer[jumpOffset]
+      if (len === 0) {
+        if (!jumping) {
+          this.offset = jumpOffset + 1
+        }
+        break
+      }
+
+      if ((len & 0xC0) === 0xC0) { // Compression pointer
+        if (!this.canRead(2)) {
+          throw new Error('Out of bounds access')
+        }
+        if (!jumping) {
+          this.offset = jumpOffset + 2
+          jumping = true
+        }
+        jumpOffset = ((len & 0x3F) << 8) | this.buffer[jumpOffset + 1]
+        continue
+      }
+
+      // Regular label
+      jumpOffset++
+      if (jumpOffset + len > this.buffer.length) {
+        throw new Error('Out of bounds access')
+      }
+
+      const label = this.buffer.slice(jumpOffset, jumpOffset + len).toString('ascii')
+      labels.push(label)
+      jumpOffset += len
     }
-  } {
-    if (this.buffer.length < DNS_HEADER_SIZE) {
+
+    return labels.join('.')
+  }
+
+  readHeader(): { id: number, flags: DnsFlags, counts: { qdcount: number, ancount: number, nscount: number, arcount: number } } {
+    if (!this.canRead(DNS_HEADER_SIZE)) {
       throw new Error(`Invalid DNS header size: ${this.buffer.length} bytes`)
     }
 
     const id = this.readUint16()
-    const flags = DnsFlags.fromBuffer(this.buffer.slice(this.offset, this.offset + 2))
-    this.offset += 2
+    const rawFlags = this.readUint16()
+    const flags = DnsFlags.fromBuffer(this.buffer.slice(this.offset - 2))
 
     const counts = {
       qdcount: this.readUint16(),
@@ -184,80 +226,65 @@ export class DnsDecoder {
       arcount: this.readUint16(),
     }
 
-    console.debug('Read DNS header:', { id, flags, counts })
     return { id, flags, counts }
   }
 
-  // Read question section
   readQuestion(): DnsQuery {
     const name = this.readName()
+    if (!this.canRead(4)) {
+      throw new Error('Out of bounds access')
+    }
     const type = this.readUint16()
     const qclass = this.readUint16()
 
-    return {
-      name,
-      type,
-      class: qclass,
-    }
+    return { name, type, class: qclass }
   }
 
-  // Read resource record
   readAnswer(): DnsAnswer {
     const name = this.readName()
+
+    if (!this.canRead(10)) {
+      throw new Error('Out of bounds access')
+    }
+
     const type = this.readUint16()
     const qclass = this.readUint16()
     const ttl = this.readUint32()
     const rdlength = this.readUint16()
-    const rdata = this.readRData(type, rdlength)
+
+    if (!this.canRead(rdlength)) {
+      throw new Error('Out of bounds access')
+    }
+
+    const data = this.readRData(type, rdlength)
 
     return {
       name,
       type,
       class: qclass,
       ttl,
-      data: rdata,
+      data,
     }
   }
 
-  // Read domain name with compression
-  private readName(): string {
-    const labels: string[] = []
-    let length = this.buffer[this.offset++]
-
-    while (length > 0) {
-      // Check for compression pointer
-      if ((length & 0xC0) === 0xC0) {
-        const pointer = ((length & 0x3F) << 8) | this.buffer[this.offset++]
-        const savedOffset = this.offset
-        this.offset = pointer
-        labels.push(this.readName())
-        this.offset = savedOffset
-        break
-      }
-
-      // Regular label
-      const label = this.buffer.slice(this.offset, this.offset + length).toString()
-      labels.push(label)
-      this.offset += length
-      length = this.buffer[this.offset++]
-    }
-
-    return labels.join('.')
-  }
-
-  // Read record type-specific data
   private readRData(type: number, length: number): any {
-    const startPos = this.offset
+    const startOffset = this.offset
     let data: any
 
     switch (type) {
       case RecordType.A:
+        if (length !== 4)
+          throw new Error('Invalid IPv4 length')
         data = this.readIPv4()
         break
       case RecordType.AAAA:
+        if (length !== 16)
+          throw new Error('Invalid IPv6 length')
         data = this.readIPv6()
         break
       case RecordType.MX:
+        if (length < 3)
+          throw new Error('Invalid MX record length')
         data = {
           preference: this.readUint16(),
           exchange: this.readName(),
@@ -272,42 +299,53 @@ export class DnsDecoder {
         data = this.readName()
         break
       default:
-        // Raw data for unknown types
-        data = this.buffer.slice(this.offset, this.offset + length)
+        data = this.buffer.slice(this.offset, this.offset + length).toString('hex')
         this.offset += length
     }
 
-    // Ensure we consumed exactly rdlength bytes
-    const consumed = this.offset - startPos
-    if (consumed !== length) {
-      throw new Error(`Record data length mismatch: expected ${length}, consumed ${consumed}`)
+    // Ensure we've read exactly rdlength bytes
+    const bytesRead = this.offset - startOffset
+    if (bytesRead !== length) {
+      this.offset = startOffset + length
     }
 
     return data
   }
 
   private readUint16(): number {
+    if (!this.canRead(2)) {
+      throw new Error('Out of bounds access')
+    }
     const value = this.buffer.readUInt16BE(this.offset)
     this.offset += 2
     return value
   }
 
   private readUint32(): number {
+    if (!this.canRead(4)) {
+      throw new Error('Out of bounds access')
+    }
     const value = this.buffer.readUInt32BE(this.offset)
     this.offset += 4
     return value
   }
 
   private readIPv4(): string {
-    const octets: number[] = []
-    for (let i = 0; i < 4; i++) {
-      octets.push(this.buffer[this.offset++])
+    if (!this.canRead(4)) {
+      throw new Error('Out of bounds access')
     }
-    return octets.join('.')
+    const parts = []
+    for (let i = 0; i < 4; i++) {
+      parts.push(this.buffer[this.offset++])
+    }
+    return parts.join('.')
   }
 
   private readIPv6(): string {
-    const parts: string[] = []
+    if (!this.canRead(16)) {
+      throw new Error('Out of bounds access')
+    }
+    const parts = []
     for (let i = 0; i < 8; i++) {
       parts.push(this.buffer.readUInt16BE(this.offset).toString(16))
       this.offset += 2
@@ -316,6 +354,9 @@ export class DnsDecoder {
   }
 
   private readString(length: number): string {
+    if (!this.canRead(length)) {
+      throw new Error('Out of bounds access')
+    }
     const str = this.buffer.slice(this.offset, this.offset + length).toString()
     this.offset += length
     return str
@@ -365,11 +406,13 @@ export function buildQuery(query: DnsQuery, options: {
 export function parseResponse(buffer: Buffer): DnsResponse {
   const decoder = new DnsDecoder(buffer)
 
-  const { id, flags, counts } = decoder.readHeader()
-
-  if (!flags.response) {
+  // Check if this is a response (QR bit should be 1)
+  const rawFlags = buffer.readUInt16BE(2)
+  if ((rawFlags & 0x8000) === 0) {
     throw new Error('Not a DNS response')
   }
+
+  const { id, flags, counts } = decoder.readHeader()
 
   // Skip questions
   for (let i = 0; i < counts.qdcount; i++) {
