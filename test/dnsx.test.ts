@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, mock } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test'
 import { Buffer } from 'node:buffer'
 import { buildQuery, DnsClient, DnsDecoder, DnsFlags, parseResponse } from '../src'
 import { TransportType } from '../src/transport'
@@ -195,19 +195,28 @@ describe('DnsClient', () => {
     })
 
     it('should handle network errors', async () => {
-      mock.module('./src/transport', () => ({
+      // Mock the transport to always fail
+      const originalModule = await import('../src/transport')
+      const mockTransport = {
+        ...originalModule,
         createTransport: () => ({
-          query: async () => { throw new Error('Network error') },
+          query: () => Promise.reject(new Error('Network error')),
         }),
-        TransportType,
-      }))
+      }
+
+      mock.module('../src/transport', () => mockTransport)
 
       const client = new DnsClient({
         domains: ['example.com'],
         type: 'A',
       })
 
-      await expect(client.query()).rejects.toThrow()
+      expect(client.query()).rejects.toThrow('DNS query failed: Network error')
+    })
+
+    // Restore original transport after test
+    afterAll(() => {
+      mock.restore()
     })
   })
 
