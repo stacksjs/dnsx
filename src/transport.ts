@@ -157,6 +157,8 @@ class TLSTransport implements Transport {
         servername: nameserver.split(':')[0], // Required for SNI
       }
 
+      let timeoutId: ReturnType<typeof setTimeout>
+
       const socket = tls.connect(options, () => {
         if (!socket.authorized) {
           socket.destroy()
@@ -180,8 +182,6 @@ class TLSTransport implements Transport {
         const message = new Uint8Array(lengthPrefix.length + requestData.length)
         message.set(lengthPrefix)
         message.set(requestData, lengthPrefix.length)
-
-        let timeoutId: ReturnType<typeof setTimeout>
 
         // Write the combined message
         socket.write(message, (err) => {
