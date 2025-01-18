@@ -8,7 +8,7 @@
 
 # dnsx
 
-> A dependency-free & minimal DNS client for the CLI, and JavaScript & TypeScript.
+> A dependency-free & minimal DNS client. For the CLI, JavaScript & TypeScript.
 
 ## Features
 
@@ -64,16 +64,16 @@ const responses = await client.query()
 
 ```bash
 # Simple queries
-dnsx example.com                          # Query A record
-dnsx example.com MX                       # Query MX record
-dnsx example.com MX @1.1.1.1             # Use specific nameserver
-dnsx example.com MX @1.1.1.1 -T          # Use TCP transport
+dnsx example.com                    # Query A record
+dnsx example.com MX                 # Query MX record
+dnsx example.com MX @1.1.1.1        # Use specific nameserver
+dnsx example.com MX @1.1.1.1 -T     # Use TCP transport
 
 # Advanced usage
-dnsx -q example.com -t MX -n 1.1.1.1 --edns show  # Show EDNS records
-dnsx example.com -J                               # JSON output
-dnsx example.com --short                         # Short output format
-dnsx example.com -Z bufsize=4096                 # Set UDP buffer size
+dnsx -q example.com -t MX -n 1.1.1.1 --edns show   # Show EDNS records
+dnsx example.com -J                                # JSON output
+dnsx example.com --short                           # Short output format
+dnsx example.com -Z bufsize=4096                   # Set UDP buffer size
 ```
 
 ## Configuration
@@ -119,24 +119,24 @@ And all CLI options map directly to these configuration options:
 dnsx --help
 
 Options:
-  -q, --query <HOST>         Host name or domain name to query
-  -t, --type <TYPE>          Type of the DNS record being queried (A, MX, NS...)
-  -n, --nameserver <ADDR>    Address of the nameserver to send packets to
-  --class <CLASS>            Network class of DNS record (IN, CH, HS)
-  --edns <SETTING>           Whether to OPT in to EDNS (disable, hide, show)
-  --txid <NUMBER>            Set transaction ID to specific value
-  -Z <TWEAKS>               Set uncommon protocol tweaks
-  -U, --udp                 Use DNS over UDP
-  -T, --tcp                 Use DNS over TCP
-  -S, --tls                 Use DNS-over-TLS
-  -H, --https               Use DNS-over-HTTPS
-  -1, --short               Display nothing but first result
-  -J, --json                Display output as JSON
-  --color <WHEN>            When to colorize output (always, auto, never)
-  --seconds                 Display durations in seconds
-  --time                    Print response time
-  -v, --version             Display version number
-  -h, --help                Display help
+  -q, --query <HOST>         # Host name or domain name to query
+  -t, --type <TYPE>          # Type of the DNS record being queried (A, MX, NS...)
+  -n, --nameserver <ADDR>    # Address of the nameserver to send packets to
+  --class <CLASS>            # Network class of DNS record (IN, CH, HS)
+  --edns <SETTING>           # Whether to OPT in to EDNS (disable, hide, show)
+  --txid <NUMBER>            # Set transaction ID to specific value
+  -Z <TWEAKS>                # Set uncommon protocol tweaks
+  -U, --udp                  # Use DNS over UDP
+  -T, --tcp                  # Use DNS over TCP
+  -S, --tls                  # Use DNS-over-TLS
+  -H, --https                # Use DNS-over-HTTPS
+  -1, --short                # Display nothing but first result
+  -J, --json                 # Display output as JSON
+  --color <WHEN>             # When to colorize output (always, auto, never)
+  --seconds                  # Display durations in seconds
+  --time                     # Print response time
+  -v, --version              # Display version number
+  -h, --help                 # Display help
 ```
 
 _Then run:_
