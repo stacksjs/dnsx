@@ -1,6 +1,25 @@
 # Changelog
 
 
+## v0.1.1...main
+
+[compare changes](https://github.com/stacksjs/dnsx/compare/v0.1.1...main)
+
+### 🏡 Chore
+
+- Adjust release flow ([ee8dc32](https://github.com/stacksjs/dnsx/commit/ee8dc32))
+- Minor updates ([4e2789c](https://github.com/stacksjs/dnsx/commit/4e2789c))
+- Avoid clashing export ([892cbfa](https://github.com/stacksjs/dnsx/commit/892cbfa))
+- Improve readme ([030c401](https://github.com/stacksjs/dnsx/commit/030c401))
+- Resolve lint issues ([4697267](https://github.com/stacksjs/dnsx/commit/4697267))
+- Minor updates ([1211a27](https://github.com/stacksjs/dnsx/commit/1211a27))
+- Lint ([58c88bc](https://github.com/stacksjs/dnsx/commit/58c88bc))
+- Adjust package name ([cef2a37](https://github.com/stacksjs/dnsx/commit/cef2a37))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## ...main
 
 
