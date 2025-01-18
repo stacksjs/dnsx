@@ -198,8 +198,8 @@ The MIT License (MIT). Please see [LICENSE](https://github.com/stacksjs/stacks/t
 Made with 💙
 
 <!-- Badges -->
-[npm-version-src]: https://img.shields.io/npm/v/dnsx?style=flat-square
-[npm-version-href]: https://npmjs.com/package/dnsx
+[npm-version-src]: https://img.shields.io/npm/v/@stacksjs/dnsx?style=flat-square
+[npm-version-href]: https://npmjs.com/package/@stacksjs/dnsx
 [github-actions-src]: https://img.shields.io/github/actions/workflow/status/stacksjs/dnsx/ci.yml?style=flat-square&branch=main
 [github-actions-href]: https://github.com/stacksjs/dnsx/actions?query=workflow%3Aci
 
