@@ -67,7 +67,7 @@ export class DnsClient {
       transport: {
         type: TransportType.UDP,
       },
-      verbose: true, // Enable verbose logging by default
+      verbose: false,
       ...options,
     }
 
@@ -79,7 +79,7 @@ export class DnsClient {
     try {
       // Create transport based on options
       const transportType = this.determineTransportType()
-      debugLog('client', `Selected transport type: ${transportType}`, true)
+      debugLog('client', `Selected transport type: ${transportType}`, this.options.verbose)
 
       const transport = createTransport(transportType)
       if (!transport) {
@@ -90,7 +90,7 @@ export class DnsClient {
 
       // Get nameserver first to fail fast if there's an issue
       const nameserver = await this.resolveNameserver()
-      debugLog('client', `Resolved nameserver: ${nameserver}`, true)
+      debugLog('client', `Resolved nameserver: ${nameserver}`, this.options.verbose)
 
       if (!nameserver) {
         throw new Error('Failed to resolve nameserver')
@@ -98,20 +98,20 @@ export class DnsClient {
 
       // Build and execute queries
       const queries = this.buildQueries()
-      debugLog('client', `Built ${queries.length} queries`, true)
+      debugLog('client', `Built ${queries.length} queries`, this.options.verbose)
 
       for (const query of queries) {
         debugLog('client', `Processing query: ${JSON.stringify({
           query,
           nameserver,
           transportType,
-        })}`, true)
+        })}`, this.options.verbose)
 
         const request = buildQuery(query, {
           txid: this.options.txid,
           edns: this.options.edns,
           tweaks: this.options.tweaks,
-          verbose: true,
+          verbose: this.options.verbose,
         })
 
         debugLog('client', `Built DNS request: ${JSON.stringify({
@@ -119,14 +119,14 @@ export class DnsClient {
           length: request.length,
           txid: request.readUInt16BE(0),
           flags: request.readUInt16BE(2).toString(16),
-        })}`, true)
+        })}`, this.options.verbose)
 
         // Handle retries
         const maxRetries = this.options.retries || 3
 
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           try {
-            debugLog('client', `Attempt ${attempt + 1}/${maxRetries}`, true)
+            debugLog('client', `Attempt ${attempt + 1}/${maxRetries}`, this.options.verbose)
             const response = await transport.query(nameserver, request)
 
             debugLog('client', `Received DNS response: ${JSON.stringify({
@@ -134,7 +134,7 @@ export class DnsClient {
               length: response.length,
               txid: response.readUInt16BE(0),
               flags: response.readUInt16BE(2).toString(16),
-            })}`, true)
+            })}`, this.options.verbose)
 
             // Validate DNS message before parsing
             if (response.length < 12) { // Minimum DNS message size
@@ -152,11 +152,11 @@ export class DnsClient {
               answerCount: parsed.answers.length,
               authorityCount: parsed.authorities.length,
               additionalCount: parsed.additionals.length,
-            })}`, true)
+            })}`, this.options.verbose)
 
             // Check for truncation with UDP
             if (transportType === TransportType.UDP && parsed.flags.truncated) {
-              debugLog('client', 'Response truncated, retrying with TCP', true)
+              debugLog('client', 'Response truncated, retrying with TCP', this.options.verbose)
               // Retry with TCP if truncated
               const tcpTransport = createTransport(TransportType.TCP)
               const tcpResponse = await tcpTransport.query(nameserver, request)
@@ -169,16 +169,16 @@ export class DnsClient {
             break // Success, exit retry loop
           }
           catch (err) {
-            debugLog('client', `Attempt ${attempt + 1} failed: ${(err as Error).message}`, true)
+            debugLog('client', `Attempt ${attempt + 1} failed: ${(err as Error).message}`, this.options.verbose)
 
             if (attempt === maxRetries - 1) {
-              debugLog('client', 'All retry attempts failed', true)
+              debugLog('client', 'All retry attempts failed', this.options.verbose)
               throw err
             }
 
             // Wait before retry with exponential backoff
             const backoffTime = 2 ** attempt * 1000
-            debugLog('client', `Waiting ${backoffTime}ms before retry`, true)
+            debugLog('client', `Waiting ${backoffTime}ms before retry`, this.options.verbose)
             await new Promise(resolve => setTimeout(resolve, backoffTime))
           }
         }
@@ -192,8 +192,8 @@ export class DnsClient {
     }
     catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
-      debugLog('client', `Query failed with error: ${errorMessage}`, true)
-      debugLog('client', `Full error: ${JSON.stringify(err)}`, true)
+      debugLog('client', `Query failed with error: ${errorMessage}`, this.options.verbose)
+      debugLog('client', `Full error: ${JSON.stringify(err)}`, this.options.verbose)
       throw new Error(`DNS query failed: ${errorMessage}`)
     }
   }
@@ -222,7 +222,7 @@ export class DnsClient {
       }
     }
 
-    debugLog('client', `Built queries: ${JSON.stringify(queries)}`, true)
+    debugLog('client', `Built queries: ${JSON.stringify(queries)}`, this.options.verbose)
     return queries
   }
 
@@ -298,7 +298,7 @@ export class DnsClient {
     try {
       // Use explicitly configured nameserver
       if (this.options.nameserver) {
-        debugLog('client', `Checking configured nameserver: ${this.options.nameserver}`, true)
+        debugLog('client', `Checking configured nameserver: ${this.options.nameserver}`, this.options.verbose)
         if (this.validateNameserver(this.options.nameserver)) {
           return this.options.nameserver
         }
@@ -306,7 +306,7 @@ export class DnsClient {
 
       // Platform-specific nameserver resolution
       const currentPlatform = platform()
-      debugLog('client', `Resolving nameserver for platform: ${currentPlatform}`, true)
+      debugLog('client', `Resolving nameserver for platform: ${currentPlatform}`, this.options.verbose)
 
       let nameserver: string
       if (currentPlatform === 'win32') {
@@ -321,13 +321,13 @@ export class DnsClient {
       }
 
       // Fallback to default if validation fails
-      debugLog('client', `Using default nameserver: ${DnsClient.DEFAULT_NAMESERVER}`, true)
+      debugLog('client', `Using default nameserver: ${DnsClient.DEFAULT_NAMESERVER}`, this.options.verbose)
       return DnsClient.DEFAULT_NAMESERVER
     }
     catch (err) {
-      debugLog('client', `Failed to resolve nameserver: ${(err as Error).message}`, true)
+      debugLog('client', `Failed to resolve nameserver: ${(err as Error).message}`, this.options.verbose)
       // Fallback to default
-      debugLog('client', `Using default nameserver: ${DnsClient.DEFAULT_NAMESERVER}`, true)
+      debugLog('client', `Using default nameserver: ${DnsClient.DEFAULT_NAMESERVER}`, this.options.verbose)
       return DnsClient.DEFAULT_NAMESERVER
     }
   }
@@ -351,17 +351,17 @@ export class DnsClient {
       // Prefer IPv4 addresses
       const ipv4Nameserver = nameservers.find(ns => !ns.includes(':'))
       if (ipv4Nameserver) {
-        debugLog('client', `Using IPv4 nameserver from resolv.conf: ${ipv4Nameserver}`, true)
+        debugLog('client', `Using IPv4 nameserver from resolv.conf: ${ipv4Nameserver}`, this.options.verbose)
         return ipv4Nameserver
       }
 
       // If no IPv4 nameserver found, use Cloudflare's DNS
-      debugLog('client', `No valid nameserver found in resolv.conf, using fallback: ${DnsClient.DEFAULT_NAMESERVER}`, true)
+      debugLog('client', `No valid nameserver found in resolv.conf, using fallback: ${DnsClient.DEFAULT_NAMESERVER}`, this.options.verbose)
       return DnsClient.DEFAULT_NAMESERVER
     }
     catch (err) {
-      debugLog('client', `Failed to read resolv.conf: ${(err as Error).message}`, true)
-      debugLog('client', `Using fallback nameserver: ${DnsClient.DEFAULT_NAMESERVER}`, true)
+      debugLog('client', `Failed to read resolv.conf: ${(err as Error).message}`, this.options.verbose)
+      debugLog('client', `Using fallback nameserver: ${DnsClient.DEFAULT_NAMESERVER}`, this.options.verbose)
       return DnsClient.DEFAULT_NAMESERVER
     }
   }
@@ -371,11 +371,11 @@ export class DnsClient {
       // On Windows, we could use the Registry or PowerShell
       // This is a simplified version - in practice, you might want to use
       // a native module or execute a PowerShell command to get this info
-      debugLog('client', `Using default nameserver for Windows: ${DnsClient.DEFAULT_NAMESERVER}`, true)
+      debugLog('client', `Using default nameserver for Windows: ${DnsClient.DEFAULT_NAMESERVER}`, this.options.verbose)
       return DnsClient.DEFAULT_NAMESERVER
     }
     catch (err) {
-      debugLog('client', `Failed to get Windows nameserver: ${(err as Error).message}`, true)
+      debugLog('client', `Failed to get Windows nameserver: ${(err as Error).message}`, this.options.verbose)
       throw new Error('Failed to get Windows nameserver')
     }
   }
@@ -436,6 +436,6 @@ export class DnsClient {
       throw new Error('HTTPS transport requires an HTTPS nameserver URL')
     }
 
-    debugLog('client', 'Options validation completed successfully', true)
+    debugLog('client', 'Options validation completed successfully', this.options.verbose)
   }
 }

@@ -54,7 +54,7 @@ cli
   .option('--color <WHEN>', 'When to colorize output (always, auto, never)')
   .option('--seconds', 'Display durations in seconds', { default: false })
   .option('--time', 'Print response time', { default: false })
-  .option('--verbose', 'Print additional debugging information')
+  .option('--verbose', 'Print additional debugging information', { default: false })
   .example('dnsx example.com')
   .example('dnsx example.com MX')
   .example('dnsx example.com MX @1.1.1.1')
@@ -64,8 +64,18 @@ cli
       // Handle domains from both arguments and --query option
       const allDomains = [
         ...domains,
-        ...(Array.isArray(options.query) ? options.query : options.query ? [options.query] : []),
       ]
+
+      // If we have a non-option argument after domain that looks like a record type, use it
+      if (domains.length > 1 && /^[A-Za-z]+$/.test(domains[1])) {
+        options.type = domains[1]
+        allDomains.pop() // Remove the type from domains array
+      }
+
+      // Add any domains from --query option
+      if (options.query) {
+        allDomains.push(...(Array.isArray(options.query) ? options.query : [options.query]))
+      }
 
       // Check if we have any domains to query
       if (allDomains.length === 0) {
@@ -85,26 +95,24 @@ cli
         edns: options.edns,
         txid: options.txid,
         tweaks: parseProtocolTweaks(options.Z),
+        verbose: options.verbose,
       })
-
-      console.log(colors.dim('  Querying DNS records...'))
 
       const startTime = Date.now()
       const responses = await client.query()
       const duration = Date.now() - startTime
 
       const output = formatOutput(responses, {
-        json: Boolean(options.json), // Convert undefined to false
-        short: Boolean(options.short), // Convert undefined to false
+        json: Boolean(options.json),
+        short: Boolean(options.short),
         showDuration: options.time ? duration : undefined,
         colors: {
           enabled: options.color === 'always'
             || (options.color !== 'never' && process.stdout.isTTY),
         },
-        rawSeconds: Boolean(options.seconds), // Convert undefined to false
+        rawSeconds: Boolean(options.seconds),
       })
 
-      console.log()
       console.log(output)
 
       // Exit with error if no responses
@@ -115,7 +123,7 @@ cli
     catch (err: any) {
       console.error()
       console.error(colors.error(`  Error: ${err.message}`))
-      if (err.stack) {
+      if (options.verbose && err.stack) {
         console.error(colors.dim(`\n  Stack trace:\n${err.stack.split('\n').map((line: string) => `    ${line}`).join('\n')}`))
       }
       console.error()
