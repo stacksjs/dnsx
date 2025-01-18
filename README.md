@@ -116,27 +116,43 @@ export default config
 And all CLI options map directly to these configuration options:
 
 ```bash
-dnsx --help
+Usage:
+  $ dnsx [...args]
+
+Commands:
+  [...args]  Perform DNS lookup for specified domains
+  version    Show the version of dtsx
+
+For more info, run any command with the `--help` flag:
+  $ dnsx --help
+  $ dnsx version --help
 
 Options:
-  -q, --query <HOST>         # Host name or domain name to query
-  -t, --type <TYPE>          # Type of the DNS record being queried (A, MX, NS...)
-  -n, --nameserver <ADDR>    # Address of the nameserver to send packets to
-  --class <CLASS>            # Network class of DNS record (IN, CH, HS)
-  --edns <SETTING>           # Whether to OPT in to EDNS (disable, hide, show)
-  --txid <NUMBER>            # Set transaction ID to specific value
-  -Z <TWEAKS>                # Set uncommon protocol tweaks
-  -U, --udp                  # Use DNS over UDP
-  -T, --tcp                  # Use DNS over TCP
-  -S, --tls                  # Use DNS-over-TLS
-  -H, --https                # Use DNS-over-HTTPS
-  -1, --short                # Display nothing but first result
-  -J, --json                 # Display output as JSON
-  --color <WHEN>             # When to colorize output (always, auto, never)
-  --seconds                  # Display durations in seconds
-  --time                     # Print response time
-  -v, --version              # Display version number
-  -h, --help                 # Display help
+  -q, --query <HOST>       Host name or domain name to query
+  -t, --type <TYPE>        Type of the DNS record being queried (A, MX, NS...)
+  -n, --nameserver <ADDR>  Address of the nameserver to send packets to
+  --class <CLASS>          Network class of DNS record (IN, CH, HS)
+  --edns <SETTING>         Whether to OPT in to EDNS (disable, hide, show)
+  --txid <NUMBER>          Set transaction ID to specific value
+  -Z <TWEAKS>              Set uncommon protocol tweaks
+  -U, --udp                Use DNS over UDP (default: false)
+  -T, --tcp                Use DNS over TCP (default: false)
+  -S, --tls                Use DNS-over-TLS (default: false)
+  -H, --https              Use DNS-over-HTTPS (default: false)
+  -1, --short              Display nothing but first result (default: false)
+  -J, --json               Display output as JSON (default: false)
+  --color <WHEN>           When to colorize output (always, auto, never)
+  --seconds                Display durations in seconds (default: false)
+  --time                   Print response time (default: false)
+  --verbose                Print additional debugging information (default: false)
+  -h, --help               Display this message
+  -v, --version            Display version number
+
+Examples:
+dnsx example.com
+dnsx example.com MX
+dnsx example.com A AAAA NS MX
+dnsx example.com -t MX -n 1.1.1.1 -T
 ```
 
 _Then run:_
