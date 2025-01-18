@@ -37,7 +37,7 @@ export interface CliOptions extends DnsOptions {
 const cli: CAC = cac('dnsx')
 
 cli
-  .command('[...domains]', 'Perform DNS lookup for specified domains')
+  .command('[...args]', 'Perform DNS lookup for specified domains')
   .option('-q, --query <HOST>', 'Host name or domain name to query')
   .option('-t, --type <TYPE>', 'Type of the DNS record being queried (A, MX, NS...)')
   .option('-n, --nameserver <ADDR>', 'Address of the nameserver to send packets to')
@@ -57,36 +57,51 @@ cli
   .option('--verbose', 'Print additional debugging information', { default: false })
   .example('dnsx example.com')
   .example('dnsx example.com MX')
-  .example('dnsx example.com MX @1.1.1.1')
+  .example('dnsx example.com A AAAA NS MX')
   .example('dnsx example.com -t MX -n 1.1.1.1 -T')
-  .action(async (domains: string[], options: CliOptions) => {
+  .action(async (args: string[], options: CliOptions) => {
     try {
-      // Handle domains from both arguments and --query option
-      const allDomains = [
-        ...domains,
-      ]
+      // Separate domains and record types from arguments
+      const validRecordTypes = new Set(['A', 'AAAA', 'NS', 'MX', 'TXT', 'SRV', 'PTR', 'CNAME', 'SOA', 'CAA'])
+      const domains: string[] = []
+      const types: string[] = []
 
-      // If we have a non-option argument after domain that looks like a record type, use it
-      if (domains.length > 1 && /^[A-Z]+$/i.test(domains[1])) {
-        options.type = domains[1]
-        allDomains.pop() // Remove the type from domains array
+      // First argument is always a domain
+      if (args.length > 0) {
+        domains.push(args[0])
+      }
+
+      // Remaining arguments could be record types
+      for (let i = 1; i < args.length; i++) {
+        const arg = args[i].toUpperCase()
+        if (validRecordTypes.has(arg)) {
+          types.push(arg)
+        } else {
+          domains.push(arg)
+        }
       }
 
       // Add any domains from --query option
       if (options.query) {
-        allDomains.push(...(Array.isArray(options.query) ? options.query : [options.query]))
+        domains.push(...(Array.isArray(options.query) ? options.query : [options.query]))
+      }
+
+      // Add any types from -t/--type option
+      if (options.type) {
+        types.push(...(Array.isArray(options.type) ? options.type : [options.type]))
       }
 
       // Check if we have any domains to query
-      if (allDomains.length === 0) {
+      if (domains.length === 0) {
+        console.error(colors.error('Error: No domains specified'))
         process.exit(1)
       }
 
       // Create client with parsed options
       const client = new DnsClient({
-        domains: allDomains,
+        domains,
         nameserver: options.nameserver,
-        type: options.type,
+        type: types.length > 0 ? types : undefined, // Only set if we have types
         class: options.class,
         udp: options.udp,
         tcp: options.tcp,

@@ -123,7 +123,7 @@ function formatText(responses: DnsResponse[], options: OutputOptions): string {
 
     // Full mode - all sections
     if (response.answers.length > 0) {
-      output.push('\nAnswers:')
+      // output.push('\nAnswers:')
       for (const answer of response.answers) {
         output.push(formatAnswer(answer, options))
       }
