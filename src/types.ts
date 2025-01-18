@@ -147,7 +147,7 @@ export interface DnsResponse {
 /**
  * DNS Header Flags
  */
-export interface DnsFlags {
+interface DnsFlags {
   response: boolean // Response flag
   opcode: number // Operation code
   authoritative: boolean // Authoritative answer
