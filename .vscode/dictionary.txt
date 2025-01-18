@@ -1,3 +1,4 @@
+additionals
 antfu
 biomejs
 booleanish
@@ -16,6 +17,7 @@ deps
 destructurable
 dnsx
 dtsx
+edns
 entrypoints
 findstr
 heroicons
@@ -35,12 +37,15 @@ postcompile
 prefetch
 preinstall
 proxied
+qclass
+resolv
 shikijs
 shoutout
 socio
 Solana
 sponsorware
 stacksjs
+Tcpip
 tlsx
 twoslash
 typecheck

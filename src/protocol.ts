@@ -191,10 +191,12 @@ export class DnsDecoder {
         if (!this.canRead(2)) {
           throw new Error('Out of bounds access')
         }
+
         if (!jumping) {
           this.offset = jumpOffset + 2
           jumping = true
         }
+
         jumpOffset = ((len & 0x3F) << 8) | this.buffer[jumpOffset + 1]
         continue
       }
@@ -234,9 +236,11 @@ export class DnsDecoder {
 
   readQuestion(): DnsQuery {
     const name = this.readName()
+
     if (!this.canRead(4)) {
       throw new Error('Out of bounds access')
     }
+
     const type = this.readUint16()
     const qclass = this.readUint16()
 
@@ -319,8 +323,10 @@ export class DnsDecoder {
     if (!this.canRead(2)) {
       throw new Error('Out of bounds access')
     }
+
     const value = this.buffer.readUInt16BE(this.offset)
     this.offset += 2
+
     return value
   }
 
@@ -328,8 +334,10 @@ export class DnsDecoder {
     if (!this.canRead(4)) {
       throw new Error('Out of bounds access')
     }
+
     const value = this.buffer.readUInt32BE(this.offset)
     this.offset += 4
+
     return value
   }
 
@@ -337,10 +345,12 @@ export class DnsDecoder {
     if (!this.canRead(4)) {
       throw new Error('Out of bounds access')
     }
+
     const parts = []
     for (let i = 0; i < 4; i++) {
       parts.push(this.buffer[this.offset++])
     }
+
     return parts.join('.')
   }
 
@@ -348,11 +358,13 @@ export class DnsDecoder {
     if (!this.canRead(16)) {
       throw new Error('Out of bounds access')
     }
+
     const parts = []
     for (let i = 0; i < 8; i++) {
       parts.push(this.buffer.readUInt16BE(this.offset).toString(16))
       this.offset += 2
     }
+
     return parts.join(':')
   }
 
@@ -360,6 +372,7 @@ export class DnsDecoder {
     if (!this.canRead(length)) {
       throw new Error('Out of bounds access')
     }
+
     const str = this.buffer.slice(this.offset, this.offset + length).toString()
     this.offset += length
     return str

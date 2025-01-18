@@ -36,7 +36,6 @@ export interface CliOptions extends DnsOptions {
 
 const cli: CAC = cac('dnsx')
 
-// Define CLI options
 cli
   .command('[...domains]', 'Perform DNS lookup for specified domains')
   .option('-q, --query <HOST>', 'Host name or domain name to query')
@@ -55,6 +54,7 @@ cli
   .option('--color <WHEN>', 'When to colorize output (always, auto, never)')
   .option('--seconds', 'Display durations in seconds', { default: false })
   .option('--time', 'Print response time', { default: false })
+  .option('--verbose', 'Print additional debugging information')
   .example('dnsx example.com')
   .example('dnsx example.com MX')
   .example('dnsx example.com MX @1.1.1.1')
@@ -115,13 +115,21 @@ cli
     catch (err: any) {
       console.error()
       console.error(colors.error(`  Error: ${err.message}`))
+      if (err.stack) {
+        console.error(colors.dim(`\n  Stack trace:\n${err.stack.split('\n').map((line: string) => `    ${line}`).join('\n')}`))
+      }
       console.error()
       process.exit(1)
     }
   })
 
+cli.command('version', 'Show the version of dtsx').action(() => {
+  console.log(version)
+})
+
 cli.help()
 cli.version(version)
+cli.parse()
 
 // Handle errors
 cli.on('error', (err) => {

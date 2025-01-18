@@ -196,21 +196,26 @@ function formatTTL(seconds: number, raw: boolean): string {
   if (raw)
     return seconds.toString()
 
-  if (seconds < 60) {
+  if (seconds < 60)
     return `${seconds}s`
-  }
+
   if (seconds < 3600) {
     const minutes = Math.floor(seconds / 60)
     const secs = seconds % 60
+
     return `${minutes}m${secs}s`
   }
+
   if (seconds < 86400) {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
+
     return `${hours}h${minutes}m`
   }
+
   const days = Math.floor(seconds / 86400)
   const hours = Math.floor((seconds % 86400) / 3600)
+
   return `${days}d${hours}h`
 }
 
@@ -218,8 +223,8 @@ function formatDuration(ms: number, raw: boolean): string {
   if (raw)
     return `${ms}ms`
 
-  if (ms < 1000) {
+  if (ms < 1000)
     return `${ms}ms`
-  }
+
   return `${(ms / 1000).toFixed(2)}s`
 }

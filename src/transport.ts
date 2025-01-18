@@ -26,6 +26,21 @@ class UDPTransport implements Transport {
       const client = dgram.createSocket('udp4')
       let timeoutId: ReturnType<typeof setTimeout>
 
+      // Parse nameserver string
+      let host: string
+      let port: number = UDPTransport.DEFAULT_PORT
+
+      if (nameserver.includes(':')) {
+        const [h, p] = nameserver.split(':')
+        host = h
+        const parsedPort = Number.parseInt(p, 10)
+        if (parsedPort > 0 && parsedPort < 65536)
+          port = parsedPort
+      }
+      else {
+        host = nameserver
+      }
+
       client.on('error', (err) => {
         clearTimeout(timeoutId)
         client.close()
@@ -35,7 +50,6 @@ class UDPTransport implements Transport {
       client.on('message', (msg: Buffer) => {
         clearTimeout(timeoutId)
         client.close()
-        // Since msg is already a Buffer, we can just resolve it directly
         resolve(msg)
       })
 
@@ -45,13 +59,10 @@ class UDPTransport implements Transport {
         reject(new Error('UDP query timed out'))
       }, UDPTransport.TIMEOUT)
 
-      // Extract host and port
-      const [host, port = UDPTransport.DEFAULT_PORT] = nameserver.split(':')
-
       // Convert Buffer to Uint8Array for send
       const data = new Uint8Array(request.buffer, request.byteOffset, request.length)
 
-      client.send(data, Number(port), host, (err) => {
+      client.send(data, port, host, (err) => {
         if (err) {
           clearTimeout(timeoutId)
           client.close()
