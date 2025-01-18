@@ -67,7 +67,7 @@ cli
       ]
 
       // If we have a non-option argument after domain that looks like a record type, use it
-      if (domains.length > 1 && /^[A-Za-z]+$/.test(domains[1])) {
+      if (domains.length > 1 && /^[A-Z]+$/i.test(domains[1])) {
         options.type = domains[1]
         allDomains.pop() // Remove the type from domains array
       }
