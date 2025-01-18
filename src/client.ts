@@ -122,7 +122,6 @@ export class DnsClient {
         })}`, true)
 
         // Handle retries
-        let lastError: Error | undefined
         const maxRetries = this.options.retries || 3
 
         for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -170,7 +169,6 @@ export class DnsClient {
             break // Success, exit retry loop
           }
           catch (err) {
-            lastError = err as Error
             debugLog('client', `Attempt ${attempt + 1} failed: ${(err as Error).message}`, true)
 
             if (attempt === maxRetries - 1) {
@@ -279,7 +277,7 @@ export class DnsClient {
     }
 
     // Basic IPv4 validation
-    const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/
+    const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/
     if (ipv4Regex.test(nameserver)) {
       const parts = nameserver.split('.')
       return parts.every((part) => {
