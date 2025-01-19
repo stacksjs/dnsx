@@ -76,7 +76,8 @@ cli
         const arg = args[i].toUpperCase()
         if (validRecordTypes.has(arg)) {
           types.push(arg)
-        } else {
+        }
+        else {
           domains.push(arg)
         }
       }
