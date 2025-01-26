@@ -42,6 +42,7 @@ resolv
 shikijs
 shoutout
 socio
+softprops
 Solana
 sponsorware
 stacksjs
