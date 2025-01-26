@@ -1,6 +1,10 @@
 # Changelog
 
 
+## v0.2.1...v0.2.1
+
+[compare changes](https://github.com/stacksjs/dnsx/compare/v0.2.1...v0.2.1)
+
 ## v0.2.0...main
 
 [compare changes](https://github.com/stacksjs/dnsx/compare/v0.2.0...main)
