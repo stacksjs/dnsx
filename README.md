@@ -19,6 +19,8 @@
 - 🤖 CLI and Library Support
 - 0️⃣ Zero runtime dependencies
 
+<p align="center"><img src="https://github.com/stacksjs/dnsx/blob/main/.github/art/screenshot.png?raw=true" alt="Screenshot of dnsx"></p>
+
 ## Install
 
 ```bash
