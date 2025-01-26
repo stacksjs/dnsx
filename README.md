@@ -12,12 +12,12 @@
 
 ## Features
 
-- Simple, lightweight DNS client
-- Query any DNS record type _(A, AAAA, MX, TXT, etc.)_
-- Multiple transport protocols _(UDP, TCP, TLS, HTTPS)_
-- Colorized output with optional JSON format
-- CLI and Library Support
-- Zero runtime dependencies
+- 🌐 Simple, lightweight DNS client
+- 🔎 Query any DNS record type _(A, AAAA, MX, TXT, etc.)_
+- 🔀 Multiple transport protocols _(UDP, TCP, TLS, HTTPS)_
+- 🎨 Colorized output with optional JSON format
+- 🤖 CLI and Library Support
+- 0️⃣ Zero runtime dependencies
 
 ## Install
 
