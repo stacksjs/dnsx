@@ -1,6 +1,33 @@
 # Changelog
 
 
+## v0.2.0...main
+
+[compare changes](https://github.com/stacksjs/dnsx/compare/v0.2.0...main)
+
+### 🚀 Enhancements
+
+- Allow for querying multiple records ([01b03df](https://github.com/stacksjs/dnsx/commit/01b03df))
+
+### 📖 Documentation
+
+- Update intro ([139303b](https://github.com/stacksjs/dnsx/commit/139303b))
+
+### 🏡 Chore
+
+- Adjust links ([168fc2e](https://github.com/stacksjs/dnsx/commit/168fc2e))
+- Adjust readme usage ([c4b0a15](https://github.com/stacksjs/dnsx/commit/c4b0a15))
+- Lint ([27b46eb](https://github.com/stacksjs/dnsx/commit/27b46eb))
+- Update bun ([c46d466](https://github.com/stacksjs/dnsx/commit/c46d466))
+- Add icons ([5deef3f](https://github.com/stacksjs/dnsx/commit/5deef3f))
+- Add screenshot ([fdbdaac](https://github.com/stacksjs/dnsx/commit/fdbdaac))
+- Learn softprops ([d848edf](https://github.com/stacksjs/dnsx/commit/d848edf))
+- Add bumpp as dev dep ([4887f7a](https://github.com/stacksjs/dnsx/commit/4887f7a))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.1.1...main
 
 [compare changes](https://github.com/stacksjs/dnsx/compare/v0.1.1...main)
