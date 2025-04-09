@@ -43,10 +43,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            bin/dnsx-linux-x64
-            bin/dnsx-linux-arm64
-            bin/dnsx-windows-x64.exe
-            bin/dnsx-darwin-x64
-            bin/dnsx-darwin-arm64
+            bin/dnsx-linux-x64.zip
+            bin/dnsx-linux-arm64.zip
+            bin/dnsx-windows-x64.zip
+            bin/dnsx-darwin-x64.zip
+            bin/dnsx-darwin-arm64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
