@@ -59,7 +59,25 @@ const sidebar = [
       { text: 'Config', link: '/config' },
     ],
   },
-  { text: 'Showcase', link: '/Showcase' },
+  {
+    text: 'Features',
+    items: [
+      { text: 'Overview', link: '/features/' },
+      { text: 'Transport Protocols', link: '/features/transport' },
+      { text: 'Record Types', link: '/features/record-types' },
+    ],
+  },
+  {
+    text: 'Advanced',
+    items: [
+      { text: 'Overview', link: '/advanced/' },
+      { text: 'Transport Configuration', link: '/advanced/transport' },
+      { text: 'DNSSEC', link: '/advanced/dnssec' },
+      { text: 'Complex Records', link: '/advanced/complex-records' },
+      { text: 'Validation', link: '/advanced/validation' },
+    ],
+  },
+  { text: 'API Reference', link: '/api-reference' },
 ]
 const description = 'A command-line & library DNS client. Like dig & dog, but for TypeScript.'
 const title = 'dnsx | A command-line & library DNS client. Like dig & dog, but for TypeScript.'

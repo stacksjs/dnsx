@@ -203,7 +203,7 @@ We would like to extend our thanks to the following sponsors for funding Stacks 
 - dig
 - [dog](https://github.com/ogham/dog)
 - [Chris Breuer](https://github.com/chrisbbreuer)
-- [All Contributors](../../contributors)
+- [All Contributors](https://github.com/stacksjs/dnsx/contributors)
 
 ## License
 

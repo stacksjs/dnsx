@@ -5,18 +5,42 @@ import net from 'node:net'
 import tls from 'node:tls'
 import { URL } from 'node:url'
 
+/**
+ * Available DNS transport protocols.
+ * Each transport type represents a different way to send DNS queries.
+ */
 export enum TransportType {
-  UDP = 'udp',
-  TCP = 'tcp',
-  TLS = 'tls',
-  HTTPS = 'https',
+  UDP = 'udp', // Traditional UDP DNS (port 53)
+  TCP = 'tcp', // TCP DNS (port 53)
+  TLS = 'tls', // DNS-over-TLS (port 853)
+  HTTPS = 'https', // DNS-over-HTTPS
 }
 
+/**
+ * Interface for DNS transport implementations.
+ * All transport types must implement this interface.
+ */
 export interface Transport {
+  /**
+   * Sends a DNS query to a nameserver and returns the response.
+   *
+   * @param nameserver - The nameserver to query (IP or hostname, optionally with port)
+   * @param request - The DNS query packet as a Buffer
+   * @returns Promise resolving to the DNS response packet
+   * @throws {Error} If the query fails or times out
+   */
   query: (nameserver: string, request: Buffer) => Promise<Buffer>
 }
 
-// UDP transport implementation
+/**
+ * UDP transport implementation for DNS queries.
+ * Uses UDP datagrams for maximum performance with retransmission support.
+ *
+ * Features:
+ * - Automatic port selection (default: 53)
+ * - Configurable timeout
+ * - Error handling for network issues
+ */
 class UDPTransport implements Transport {
   private static readonly DEFAULT_PORT = 53
   private static readonly TIMEOUT = 5000
@@ -73,7 +97,15 @@ class UDPTransport implements Transport {
   }
 }
 
-// TCP transport implementation
+/**
+ * TCP transport implementation for DNS queries.
+ * Used for larger DNS messages and when reliability is crucial.
+ *
+ * Features:
+ * - Length-prefixed messages (RFC 1035)
+ * - Automatic message reassembly
+ * - Connection timeout handling
+ */
 class TCPTransport implements Transport {
   private static readonly DEFAULT_PORT = 53
   private static readonly TIMEOUT = 5000
@@ -155,7 +187,16 @@ class TCPTransport implements Transport {
   }
 }
 
-// TLS transport implementation
+/**
+ * TLS transport implementation for DNS queries (DNS-over-TLS).
+ * Provides encrypted DNS communication for enhanced privacy.
+ *
+ * Features:
+ * - TLS 1.2+ encryption
+ * - SNI support
+ * - Certificate validation
+ * - Length-prefixed messages
+ */
 class TLSTransport implements Transport {
   private static readonly DEFAULT_PORT = 853
   private static readonly TIMEOUT = 5000
@@ -245,7 +286,16 @@ class TLSTransport implements Transport {
   }
 }
 
-// HTTPS transport implementation
+/**
+ * HTTPS transport implementation for DNS queries (DNS-over-HTTPS).
+ * Provides encrypted DNS communication over HTTPS for maximum compatibility.
+ *
+ * Features:
+ * - HTTPS POST requests
+ * - Binary DNS wire format
+ * - Standard HTTPS port (443)
+ * - Compatible with HTTP proxies
+ */
 class HTTPSTransport implements Transport {
   private static readonly TIMEOUT = 5000
   private static readonly CONTENT_TYPE = 'application/dns-message'
@@ -318,6 +368,20 @@ class HTTPSTransport implements Transport {
   }
 }
 
+/**
+ * Creates a transport instance based on the specified type.
+ * Factory function to get the appropriate transport implementation.
+ *
+ * @param type - The type of transport to create
+ * @returns A transport instance implementing the Transport interface
+ * @throws {Error} If the transport type is not supported
+ *
+ * @example
+ * ```ts
+ * const transport = createTransport(TransportType.UDP)
+ * const response = await transport.query('1.1.1.1', dnsPacket)
+ * ```
+ */
 export function createTransport(type: TransportType): Transport {
   switch (type) {
     case TransportType.UDP:

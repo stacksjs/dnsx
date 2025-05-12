@@ -1,7 +1,16 @@
 import type { TransportType } from './transport'
 
 /**
- * DNS Record Types
+ * DNS Record Types as defined in various RFCs.
+ * Each type represents a different kind of resource record.
+ *
+ * Common types:
+ * - A (1): IPv4 address
+ * - AAAA (28): IPv6 address
+ * - MX (15): Mail exchange
+ * - TXT (16): Text records
+ * - CNAME (5): Canonical name
+ * - NS (2): Nameserver
  */
 export enum RecordType {
   A = 1,
@@ -22,70 +31,91 @@ export enum RecordType {
 }
 
 /**
- * DNS Query Classes
+ * DNS Query Classes as defined in RFC 1035.
+ * The class specifies the protocol group of the record.
  */
 export enum QClass {
-  IN = 1, // Internet
-  CH = 3, // CHAOS
-  HS = 4, // Hesiod
+  IN = 1, // Internet - Most commonly used
+  CH = 3, // CHAOS - Rarely used, mainly for server identification
+  HS = 4, // Hesiod - Rarely used, for Hesiod directory service
 }
 
 /**
- * EDNS Mode Configuration
+ * EDNS (Extension Mechanisms for DNS) Mode Configuration.
+ * Controls how EDNS records are handled in queries and responses.
  */
 export enum EDNSMode {
-  Disable = 'disable',
-  Hide = 'hide',
-  Show = 'show',
+  Disable = 'disable', // Don't use EDNS
+  Hide = 'hide', // Use EDNS but hide OPT records in output
+  Show = 'show', // Use EDNS and show OPT records in output
 }
 
 /**
- * Protocol Tweak Options
+ * Protocol-level tweaks for fine-tuning DNS queries.
+ * These options modify the DNS header flags and EDNS parameters.
  */
 export interface ProtocolTweaks {
-  authoritative?: boolean
-  authenticData?: boolean
-  checkingDisabled?: boolean
-  udpPayloadSize?: number
+  authoritative?: boolean // Set AA (Authoritative Answer) flag
+  authenticData?: boolean // Set AD (Authentic Data) flag
+  checkingDisabled?: boolean // Set CD (Checking Disabled) flag
+  udpPayloadSize?: number // Set EDNS UDP payload size
 }
 
 /**
- * Transport Protocol Configuration
+ * Transport protocol configuration for DNS queries.
+ * Supports multiple transport options with retry and timeout settings.
  */
 export interface TransportConfig {
-  type?: TransportType
-  udp?: boolean
-  tcp?: boolean
-  tls?: boolean
-  https?: boolean
-  timeout?: number
-  retries?: number
+  type?: TransportType // Primary transport type
+  udp?: boolean // Enable UDP transport
+  tcp?: boolean // Enable TCP transport
+  tls?: boolean // Enable DNS-over-TLS
+  https?: boolean // Enable DNS-over-HTTPS
+  timeout?: number // Query timeout in milliseconds
+  retries?: number // Number of retry attempts
 }
 
 /**
- * Query Configuration
+ * Query configuration for DNS lookups.
+ * Specifies what to query and how to query it.
  */
 export interface QueryConfig {
-  domains: string[] // Domains to query
-  types?: (RecordType | string)[] // Record types to query
-  classes?: (QClass | string)[] // Query classes
-  nameserver?: string // Nameserver to use
-  recursive?: boolean // Enable recursion
+  domains: string[] // List of domains to query
+  types?: (RecordType | string)[] // Record types to query for each domain
+  classes?: (QClass | string)[] // Query classes to use
+  nameserver?: string // Nameserver to query against
+  recursive?: boolean // Whether to request recursive resolution
 }
 
 /**
- * Output Configuration
+ * Output formatting configuration.
+ * Controls how DNS responses are formatted and displayed.
  */
 export interface OutputConfig {
   short?: boolean // Show only first result
-  json?: boolean // Output as JSON
-  color?: 'always' | 'auto' | 'never' // When to use colors
-  seconds?: boolean // Show raw seconds
-  time?: boolean // Show query time
+  json?: boolean // Format output as JSON
+  color?: 'always' | 'auto' | 'never' // When to use ANSI colors
+  seconds?: boolean // Show TTL in raw seconds
+  time?: boolean // Show query execution time
 }
 
 /**
- * Complete DNS Client Options
+ * Complete configuration options for the DNS client.
+ * Combines all configuration aspects into a single interface.
+ *
+ * @example
+ * ```ts
+ * const options: DnsOptions = {
+ *   domains: ['example.com'],
+ *   type: 'A',
+ *   nameserver: '1.1.1.1',
+ *   edns: 'show',
+ *   transport: {
+ *     type: 'udp',
+ *     timeout: 5000
+ *   }
+ * }
+ * ```
  */
 export interface DnsOptions {
   // Query options (can be set via -q, --query, etc.)
@@ -123,29 +153,32 @@ export interface DnsOptions {
 }
 
 /**
- * DNS Answer Record
+ * Represents a single DNS resource record in the response.
+ * Contains the record's name, type, class, TTL, and data.
  */
 export interface DnsAnswer {
-  name: string // Record name
-  type: RecordType // Record type
-  class: QClass // Record class
-  ttl: number // Time to live
-  data: any // Record data
+  name: string // Domain name this record belongs to
+  type: RecordType // Type of resource record
+  class: QClass // Record class (usually IN)
+  ttl: number // Time-to-live in seconds
+  data: any // Record-specific data
 }
 
 /**
- * DNS Response
+ * Complete DNS response message structure.
+ * Contains the message ID, flags, and all record sections.
  */
 export interface DnsResponse {
-  id: number // Transaction ID
-  flags: DnsFlags // DNS flags
-  answers: DnsAnswer[] // Answer records
-  authorities: DnsAnswer[] // Authority records
-  additionals: DnsAnswer[] // Additional records
+  id: number // Transaction ID matching the query
+  flags: DnsFlags // DNS header flags
+  answers: DnsAnswer[] // Answer section records
+  authorities: DnsAnswer[] // Authority section records
+  additionals: DnsAnswer[] // Additional section records
 }
 
 /**
- * DNS Header Flags
+ * DNS message header flags as defined in RFC 1035.
+ * Controls various aspects of DNS message processing.
  */
 interface DnsFlags {
   response: boolean // Response flag
@@ -160,7 +193,8 @@ interface DnsFlags {
 }
 
 /**
- * DNS Error Response Codes
+ * Standard DNS response codes as defined in RFC 1035 and others.
+ * Indicates the status of the response message.
  */
 export enum DnsResponseCode {
   NoError = 0, // No error
@@ -177,7 +211,8 @@ export enum DnsResponseCode {
 }
 
 /**
- * Wire Format Error Types
+ * Error types that can occur during DNS wire format processing.
+ * Used for detailed error reporting in protocol handling.
  */
 export enum WireError {
   TruncatedPacket = 'TRUNCATED_PACKET',
@@ -191,8 +226,12 @@ export enum WireError {
   NetworkError = 'NETWORK_ERROR',
 }
 
+/**
+ * Structure of a DNS query message.
+ * Contains the essential components needed to form a query.
+ */
 export interface DnsQuery {
-  name: string
-  type: RecordType
-  class: QClass
+  name: string // Domain name to query
+  type: RecordType // Record type to query for
+  class: QClass // Query class (usually IN)
 }

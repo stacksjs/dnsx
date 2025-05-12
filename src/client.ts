@@ -6,12 +6,46 @@ import { createTransport, TransportType } from './transport'
 import { QClass, RecordType } from './types'
 import { debugLog } from './utils'
 
+/**
+ * A powerful DNS client that supports multiple transport protocols and advanced DNS features.
+ *
+ * Features:
+ * - Multiple transport protocols (UDP, TCP, TLS, HTTPS)
+ * - EDNS support
+ * - Protocol tweaks
+ * - Automatic nameserver resolution
+ * - Retry mechanism with exponential backoff
+ * - Comprehensive error handling
+ *
+ * @example
+ * ```ts
+ * const client = new DnsClient({
+ *   domains: ['example.com'],
+ *   type: 'A',
+ *   nameserver: '1.1.1.1'
+ * })
+ *
+ * const responses = await client.query()
+ * ```
+ */
 export class DnsClient {
   private options: DnsOptions
   private static readonly DEFAULT_NAMESERVER = '1.1.1.1'
   private static readonly RESOLV_CONF_PATH = '/etc/resolv.conf'
   private static readonly WINDOWS_DNS_KEY = 'SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Nameserver'
 
+  /**
+   * Validates a domain name according to DNS standards.
+   * Checks for:
+   * - Consecutive dots
+   * - Start/end dots
+   * - Overall length (max 253 characters)
+   * - Label length (max 63 characters)
+   * - Valid characters (a-z, 0-9, -)
+   *
+   * @param domain - The domain name to validate
+   * @throws {Error} If the domain name is invalid
+   */
   private validateDomainName(domain: string): void {
     // Check for consecutive dots
     if (domain.includes('..')) {
@@ -42,6 +76,14 @@ export class DnsClient {
     }
   }
 
+  /**
+   * Validates a DNS record type.
+   * Accepts either string representation (e.g., 'A', 'MX') or numeric values.
+   *
+   * @param type - The record type to validate (string or number)
+   * @throws {Error} If the record type is invalid
+   * @throws {TypeError} If the type is neither string nor number
+   */
   private validateRecordType(type: string | number): void {
     if (typeof type === 'string') {
       // Check if the type exists in RecordType enum
@@ -62,6 +104,12 @@ export class DnsClient {
     }
   }
 
+  /**
+   * Creates a new DNS client instance with the specified options.
+   *
+   * @param options - Configuration options for the DNS client
+   * @throws {Error} If the options are invalid
+   */
   constructor(options: DnsOptions) {
     this.options = {
       transport: {
@@ -75,6 +123,19 @@ export class DnsClient {
     this.validateOptions()
   }
 
+  /**
+   * Executes DNS queries based on the client configuration.
+   *
+   * Features:
+   * - Automatic transport selection (UDP/TCP)
+   * - Nameserver resolution
+   * - Retry mechanism with exponential backoff
+   * - Truncation handling (fallback to TCP)
+   * - Comprehensive error handling
+   *
+   * @returns Promise resolving to an array of DNS responses
+   * @throws {Error} If the query fails after all retries
+   */
   async query(): Promise<DnsResponse[]> {
     try {
       // Create transport based on options
