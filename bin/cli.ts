@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
 import type { DnsOptions } from '../src/types'
 import process from 'node:process'
+import { Logger } from '@stacksjs/clarity'
 import { cac } from 'cac'
 import pc from 'picocolors'
 import { version } from '../package.json'
@@ -35,6 +36,7 @@ export interface CliOptions extends DnsOptions {
 }
 
 const cli: CAC = cac('dnsx')
+const logger = new Logger('dnsx:cli')
 
 cli
   .command('[...args]', 'Perform DNS lookup for specified domains')
@@ -94,7 +96,7 @@ cli
 
       // Check if we have any domains to query
       if (domains.length === 0) {
-        console.error(colors.error('Error: No domains specified'))
+        logger.error(colors.error('Error: No domains specified'))
         process.exit(1)
       }
 
@@ -129,7 +131,7 @@ cli
         rawSeconds: Boolean(options.seconds),
       })
 
-      console.log(output)
+      await logger.info(output)
 
       // Exit with error if no responses
       if (responses.length === 0) {
@@ -137,18 +139,16 @@ cli
       }
     }
     catch (err: any) {
-      console.error()
-      console.error(colors.error(`  Error: ${err.message}`))
+      await logger.error(colors.error(`Error: ${err.message}`))
       if (options.verbose && err.stack) {
-        console.error(colors.dim(`\n  Stack trace:\n${err.stack.split('\n').map((line: string) => `    ${line}`).join('\n')}`))
+        await logger.debug(colors.dim(`Stack trace:\n${err.stack.split('\n').map((line: string) => `  ${line}`).join('\n')}`))
       }
-      console.error()
       process.exit(1)
     }
   })
 
-cli.command('version', 'Show the version of dtsx').action(() => {
-  console.log(version)
+cli.command('version', 'Show the version of dtsx').action(async () => {
+  await logger.info(version)
 })
 
 cli.help()
@@ -156,9 +156,7 @@ cli.version(version)
 cli.parse()
 
 // Handle errors
-cli.on('error', (err) => {
-  console.error()
-  console.error(colors.error(`  Error: ${err.message}`))
-  console.error()
+cli.on('error', async (err) => {
+  await logger.error(colors.error(`Error: ${err.message}`))
   process.exit(1)
 })

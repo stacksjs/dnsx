@@ -1,4 +1,5 @@
 import type { ProtocolTweaks } from './types'
+import { Logger } from '@stacksjs/clarity'
 
 export function parseProtocolTweaks(tweaks: string | string[] | undefined): ProtocolTweaks | undefined {
   if (!tweaks)
@@ -23,7 +24,8 @@ export function parseProtocolTweaks(tweaks: string | string[] | undefined): Prot
 
 export function debugLog(category: string, message: string, verbose?: boolean): void {
   if (verbose) {
-    // eslint-disable-next-line no-console
-    console.debug(`[dnsx:${category}] ${message}`)
+    const baseLogger = new Logger('dnsx')
+    const logger = baseLogger.extend(category)
+    logger.debug(message)
   }
 }
