@@ -67,24 +67,14 @@
     "zip:darwin-arm64": "zip -j bin/dnsx-darwin-arm64.zip bin/dnsx-darwin-arm64"
   },
   "devDependencies": {
-    "@stacksjs/bumpx": "^0.1.84",
-    "@stacksjs/clarity": "^0.3.23",
     "@stacksjs/docs": "^0.70.23",
     "@stacksjs/eslint-config": "^3.13.1-beta.2",
-    "@stacksjs/gitlint": "^0.1.5",
-    "@stacksjs/logsmith": "^0.1.18",
     "@stacksjs/tlsx": "^0.10.0",
-    "@types/bun": "^1.2.23",
-    "buddy-bot": "0.9.7",
+    "better-dx": "^0.2.0",
     "bumpp": "^10.2.3",
-    "bun-git-hooks": "^0.2.19",
-    "bun-plugin-dtsx": "0.9.5",
-    "bunfig": "^0.15.0",
     "cac": "^6.7.14",
     "changelogen": "^0.6.2",
-    "consola": "^3.4.2",
-    "typescript": "^5.9.2",
-    "unocss": "^66.5.2"
+    "consola": "^3.4.2"
   },
   "overrides": {
     "unconfig": "0.3.10"
